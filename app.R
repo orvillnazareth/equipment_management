@@ -30,12 +30,11 @@ gs4_auth(email = "your-email@gmail.com")  # Replace with your email
 
 loginsheet <- read_sheet("link-to-your-google-sheet-with-login-information")
 credentials <- loginsheet[,c(1,2)]
-equipment_sheet <- read_sheet("link-to-your-google-sheet-with-equipment-information", col_types = "c")
+equipment_sheet <- read_sheet("link-to-your-google-sheet-with-login-information", col_types = "c")
 
-ui <- secure_app(head_auth = tags$script(inactivity), fluidPage(
+ui <- secure_app(head_auth = tags$script(inactivity), fixedPage(
   useShinyjs(),
-  
-  navbarPage("Equipment management", position = "fixed-top",
+  navbarPage("Equipment management", position = "static-top",
              tabPanel("Equipment Selection",
                       h3("Equipment Details"),
                       DT::dataTableOutput("equipment_df"),
@@ -48,11 +47,15 @@ ui <- secure_app(head_auth = tags$script(inactivity), fluidPage(
              ),
              tabPanel("Verification",
                       sidebarLayout(
-                        sidebarPanel(width = 2, position = "fixed-left",
-                                     h4("User Information"),
+                        sidebarPanel(width = 4,
+                                     h4("Your Name"),
                                      textOutput("user_name"),
+                                     hr(),
                                      textInput("verifier_name", "Verifier Name"),
                                      passwordInput("verifier_pin", "Verifier Password"),
+                                     textInput("noverify",HTML("Unable to instantly verify?<br/>add you own credentials above and add a nominee in the box below:")),
+                                     textInput("update","Would you like to add an update?"),
+                                     textInput("comment","Additional comments"),
                                      actionButton("submit", "Verify and Submit")
                         ),
                         mainPanel(
@@ -61,14 +64,32 @@ ui <- secure_app(head_auth = tags$script(inactivity), fluidPage(
                           actionButton("delete_row2", "Delete Selected Row")
                         )
                       )
-             )
-  )
+             ),
+             tabPanel("Register user", fluid = T,
+                      sidebarLayout(
+                        sidebarPanel(
+                          textInput("name","Name"),
+                          textInput("designation","Designation"),
+                          textInput("contact_no","Contact Number"),
+                          textInput("username","Username"),
+                          textInput("password","Password"),
+                          actionButton("submit_register","Register")
+                        ),mainPanel()
+                      ))
+  ),
+  tags$script(HTML("
+                 setInterval(function(){
+                 var currentTime = new Date();
+                 varformattedTime = currentTime.toLocaleString();
+                 Shiny.onInputChange('jsTime', formattedTime);
+                 }, 1000);
+                 "))
 ))
 
 server <- function(input, output, session) {
   result_auth <- secure_server(check_credentials = check_credentials(credentials))
   options(gargle_oauth_cache = "your-email@gmail.com")  # Replace with your email
-  gs4_auth(email = "your-email@gmail.com")  # Replace with your email
+  gs4_auth(email = "wcsimumbai@gmail.com")  # Replace with your email
   name <- reactive({loginsheet %>% dplyr::filter(user == reactiveValuesToList(result_auth)[[1]]) %>% .$name})
   
   output$equipment_df <- DT::renderDataTable(equipment_sheet)
@@ -126,8 +147,10 @@ server <- function(input, output, session) {
       submit_table <- cbind(data_table(),
                             user_name = name(),
                             verifier_name = verifier_name,
-                            date = Sys.Date(),
-                            time = format(Sys.time(),"%H:%M"))
+                            datetime = Sys.time()+19800,
+                            update = input$update,
+                            comment = input$comment,
+                            nominee = input$noverify)
       submit_table %>% sheet_append("link-to-your-google-sheet-for-submissions", .)
       
     } else {
@@ -137,6 +160,20 @@ server <- function(input, output, session) {
         easyClose = TRUE
       ))
     }
+  })
+  
+  new_register_row <- reactive(data.frame(user = input$username,
+                                          password = input$password,
+                                          name = input$name,
+                                          designation = input$designation,
+                                          refered = reactiveValuesToList(result_auth)[[1]]))
+  observeEvent(input$submit_register,{
+    req(input$username)
+    if (any(loginsheet$user == input$username)) {showModal(modalDialog("Username already exists. Kindly change username or contact support for help."))
+      reset("password")}
+    else {new_register_row() %>% sheet_append("link-to-your-google-sheet-with-login-information",.)
+      showModal(modalDialog("Registeration complete"))
+      reset("password")}
   })
   
   observeEvent(input$reset, {
