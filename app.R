@@ -51,6 +51,7 @@ ui <- secure_app(head_auth = tags$script(inactivity), fixedPage(
                                      h4("Your Name"),
                                      textOutput("user_name"),
                                      hr(),
+                                     shiny::selectInput(inputId = "in_out",label = "",choices = c("Inward","Outward")),
                                      textInput("verifier_name", "Verifier Name"),
                                      passwordInput("verifier_pin", "Verifier Password"),
                                      textInput("noverify",HTML("Unable to instantly verify?<br/>add you own credentials above and add a nominee in the box below:")),
@@ -146,6 +147,7 @@ server <- function(input, output, session) {
       ))
       submit_table <- cbind(data_table(),
                             user_name = name(),
+                            in_out = input$in_out,
                             verifier_name = verifier_name,
                             datetime = Sys.time()+19800,
                             update = input$update,
