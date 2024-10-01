@@ -90,7 +90,7 @@ ui <- secure_app(head_auth = tags$script(inactivity), fixedPage(
 server <- function(input, output, session) {
   result_auth <- secure_server(check_credentials = check_credentials(credentials))
   options(gargle_oauth_cache = "your-email@gmail.com")  # Replace with your email
-  gs4_auth(email = "wcsimumbai@gmail.com")  # Replace with your email
+  gs4_auth(email = "your-email@gmail.com")  # Replace with your email
   name <- reactive({loginsheet %>% dplyr::filter(user == reactiveValuesToList(result_auth)[[1]]) %>% .$name})
   
   output$equipment_df <- DT::renderDataTable(equipment_sheet)
