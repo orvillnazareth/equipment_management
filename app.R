@@ -28,10 +28,6 @@ idleTimer();"
 options(gargle_oauth_cache = "your-email@gmail.com")  # Replace with your email
 gs4_auth(email = "your-email@gmail.com")  # Replace with your email
 
-loginsheet <- read_sheet("link-to-your-google-sheet-with-login-information")
-credentials <- loginsheet[,c(1,2)]
-equipment_sheet <- read_sheet("link-to-your-google-sheet-with-login-information", col_types = "c")
-
 ui <- secure_app(head_auth = tags$script(inactivity), fixedPage(
   useShinyjs(),
   navbarPage("Equipment management", position = "static-top",
@@ -88,6 +84,9 @@ ui <- secure_app(head_auth = tags$script(inactivity), fixedPage(
 ))
 
 server <- function(input, output, session) {
+  loginsheet <- read_sheet("link-to-your-google-sheet-with-login-information")
+  credentials <- loginsheet[,c(1,2)]
+  equipment_sheet <- read_sheet("link-to-your-google-sheet-with-login-information", col_types = "c")
   result_auth <- secure_server(check_credentials = check_credentials(credentials))
   options(gargle_oauth_cache = "your-email@gmail.com")  # Replace with your email
   gs4_auth(email = "your-email@gmail.com")  # Replace with your email
